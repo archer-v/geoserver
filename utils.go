@@ -23,28 +23,28 @@ type HTTPRequest struct {
 }
 
 type Error struct {
-	HttpStatus int
-	Message    string
-	Url        string
-	Status     string
-	Servlet    string
-	detailText string
+	Message string `json:"message"`
+	Url     string `json:"url"`
+	Status  int    `json:"status,string"`
+	Servlet string `json:"servlet"`
 }
 
 func (e *Error) Error() string {
-	geoserverErr, ok := statusErrorMapping[e.HttpStatus]
+	geoserverErr, ok := statusErrorMapping[e.Status]
 	if !ok {
-		geoserverErr = fmt.Errorf("Unexpected Error with status code %d", e.HttpStatus)
+		geoserverErr = fmt.Errorf("Unexpected Error with status code %d", e.Status)
 	}
-	return fmt.Sprintf("abstract:%s\ndetails:%s\n", geoserverErr, e.detailText)
+	return fmt.Sprintf("abstract:%s\ndetails:%s\n", geoserverErr, e.Message)
 }
 
 //create newError with detail fields
 func newError(statusCode int, text []byte) *Error {
 	err := Error{
-		HttpStatus: statusCode,
-		detailText: string(text),
+		Status:  statusCode,
+		Message: string(text),
 	}
+	//some errors are returned as JSON
+	//for example when assembled REST api uri is incorrect due to empty the resource name or so on
 	_ = json.Unmarshal(text, &err)
 	return &err
 }
