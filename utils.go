@@ -2,7 +2,6 @@ package geoserver
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -21,6 +20,33 @@ type HTTPRequest struct {
 	Data     io.Reader
 	DataType string
 	Method   string
+}
+
+type Error struct {
+	HttpStatus int
+	Message    string
+	Url        string
+	Status     string
+	Servlet    string
+	detailText string
+}
+
+func (e *Error) Error() string {
+	geoserverErr, ok := statusErrorMapping[e.HttpStatus]
+	if !ok {
+		geoserverErr = fmt.Errorf("Unexpected Error with status code %d", e.HttpStatus)
+	}
+	return fmt.Sprintf("abstract:%s\ndetails:%s\n", geoserverErr, e.detailText)
+}
+
+//create newError with detail fields
+func newError(statusCode int, text []byte) *Error {
+	err := Error{
+		HttpStatus: statusCode,
+		detailText: string(text),
+	}
+	_ = json.Unmarshal(text, &err)
+	return &err
 }
 
 //UtilsInterface contians common function used to help you deal with data and geoserver api
@@ -67,13 +93,7 @@ func (g *GeoServer) DoRequest(request HTTPRequest) (responseText []byte, statusC
 
 //GetError this return the proper error message
 func (g *GeoServer) GetError(statusCode int, text []byte) (err error) {
-	geoserverErr, ok := statusErrorMapping[statusCode]
-	if !ok {
-		geoserverErr = fmt.Errorf("Unexpected Error with status code %d", statusCode)
-	}
-	errDetails := string(text)
-	fullMSG := fmt.Sprintf("abstract:%s\ndetails:%s\n", geoserverErr, errDetails)
-	return errors.New(fullMSG)
+	return newError(statusCode, text)
 }
 
 // IsEmpty helper function to check if obj/struct is nil/empty
