@@ -5,8 +5,64 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 )
+
+type Range struct {
+	Low  []int
+	High []int
+}
+
+func (r *Range) UnmarshalJSON(data []byte) error {
+
+	var rdata map[string]string
+
+	err := json.Unmarshal(data, &rdata)
+	if err != nil {
+		return err
+	}
+
+	rangeArray := func(d string) (res []int, err error) {
+		strArr := strings.Split(d, " ")
+		intArr := make([]int, 0, len(strArr))
+		for _, v := range strArr {
+			iv, err := strconv.Atoi(v)
+			if err != nil {
+				return res, err
+			}
+			intArr = append(intArr, iv)
+		}
+		return intArr, nil
+	}
+
+	*r = Range{}
+	r.High, err = rangeArray(rdata["high"])
+	if err != nil {
+		return err
+	}
+	r.Low, err = rangeArray(rdata["low"])
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+type Transform struct {
+	ScaleX     float64 `json:"scaleX"`
+	ScaleY     float64 `json:"scaleY"`
+	ShearX     float64 `json:"shearX"`
+	ShearY     float64 `json:"shearY"`
+	TranslateX float64 `json:"translateX"`
+	TranslateY float64 `json:"translateY"`
+}
+
+type Grid struct {
+	Dimension int        `json:"@dimension,omitempty,string"`
+	Range     *Range     `json:"range,omitempty"`
+	Transform *Transform `json:"transform,omitempty"`
+}
 
 // Coverage is geoserver Coverage (raster layer) data struct
 type Coverage struct {
@@ -28,6 +84,7 @@ type Coverage struct {
 	Store                *Resource          `json:"store,omitempty"`
 	CqlFilter            string             `json:"cqlFilter,omitempty"`
 	OverridingServiceSRS bool               `json:"overridingServiceSRS,omitempty"`
+	Grid                 *Grid              `json:"grid,omitempty"`
 	//Metadata               *Metadata          `json:"metadata,omitempty"`  //need to fix the implementation due to json parse error
 	//SupportedFormats       []string			  `json:"supportedFormats,omitempty"`  //need to fix the implementation due to json parse error
 }
@@ -153,11 +210,31 @@ func (g *GeoServer) UpdateCoverage(workspaceName string, coverage *Coverage) (mo
 	}
 	targetURL := g.ParseURL("rest", "workspaces", workspaceName, "coveragestores", items[1], "coverages", coverage.Name)
 
-	type coverageUpdateRequestBody struct {
-		Coverage Coverage `json:"coverage,omitempty"`
+	type CoverageUpdate struct {
+		Name              string             `json:"name,omitempty"`
+		Title             string             `json:"title,omitempty"`
+		Description       string             `json:"description,omitempty"`
+		Abstract          string             `json:"abstract,omitempty"`
+		Keywords          *Keywords          `json:"keywords,omitempty"`
+		Enabled           bool               `json:"enabled,omitempty"`
+		NativeBoundingBox *NativeBoundingBox `json:"nativeBoundingBox,omitempty"`
+		LatLonBoundingBox *LatLonBoundingBox `json:"latLonBoundingBox,omitempty"`
 	}
 
-	data := coverageUpdateRequestBody{Coverage: *coverage}
+	type coverageUpdateRequestBody struct {
+		Coverage CoverageUpdate `json:"coverage,omitempty"`
+	}
+
+	data := coverageUpdateRequestBody{Coverage: CoverageUpdate{
+		Name:              coverage.Name,
+		Title:             coverage.Title,
+		Description:       coverage.Description,
+		Abstract:          coverage.Abstract,
+		Keywords:          coverage.Keywords,
+		Enabled:           coverage.Enabled,
+		NativeBoundingBox: coverage.NativeBoundingBox,
+		LatLonBoundingBox: coverage.LatLonBoundingBox,
+	}}
 
 	serializedLayer, _ := g.SerializeStruct(data)
 	httpRequest := HTTPRequest{

@@ -1,6 +1,7 @@
 package geoserver
 
 import (
+	"encoding/json"
 	"github.com/stretchr/testify/assert"
 	"strings"
 	"testing"
@@ -190,4 +191,11 @@ func TestGetStorageCoverages(t *testing.T) {
 		assert.Fail(t, "can't delete temporary coverageStore", err.Error())
 	}
 
+}
+
+func TestRangeUnmarshalJSON(t *testing.T) {
+	data := []byte(`{"@dimension":"2","range":{"low":"0 0","high":"4733 4107"},"transform":{"scaleX":0.04999999970383209,"scaleY":-0.05000000000013606,"shearX":0,"shearY":0,"translateX":191761.63654168273,"translateY":8152089.889442444},"crs":"EPSG:32701"}`)
+	var grid Grid
+	err := json.Unmarshal(data, &grid)
+	assert.Nil(t, err)
 }
