@@ -37,26 +37,35 @@ type testEnv struct {
 		JndiReferenceName string
 		Options           []Entry
 	} `yaml:"postgresJNDI"`
+
+	TestData struct {
+		GeoTiff      string `yaml:"geotiff"`
+		CoverageName string `yaml:"coverageName"`
+	} `yaml:"testData"`
 }
 
 func test_before(t *testing.T) {
-	if err := test_load_env(); err != nil {
-		t.Fatalf("can't load testing confiration from file: %v", err.Error())
+
+	if testConfig == nil {
+		if err := test_load_env("test_env.yml"); err != nil {
+			t.Fatalf("can't load testing confiration from file: %v", err.Error())
+		}
+		//overloads with local configuration if exists
+		_ = test_load_env("test_env_local.yml")
 	}
+
 	if gsCatalog == nil {
 		gsCatalog = GetCatalog(testConfig.Geoserver.ServerURL, testConfig.Geoserver.Username, testConfig.Geoserver.Password)
 	}
 }
 
-func test_load_env() error {
+func test_load_env(fileName string) error {
 
-	if testConfig != nil {
-		return nil
+	if testConfig == nil {
+		testConfig = &testEnv{}
 	}
 
-	testConfig = &testEnv{}
-
-	yamlFile, err := ioutil.ReadFile(filepath.Join(gsCatalog.getGoGeoserverPackageDir(), "test_env.yml"))
+	yamlFile, err := ioutil.ReadFile(filepath.Join(gsCatalog.getGoGeoserverPackageDir(), fileName))
 	if err != nil {
 		return fmt.Errorf("yamlFile.Get err %v ", err)
 	}

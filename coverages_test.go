@@ -36,7 +36,6 @@ func coveragesPrepareTestStorage(t *testing.T, storeName string) {
 	if err != nil && !strings.Contains(err.Error(), "exists") {
 		assert.Fail(t, "can't create coverage store", err.Error())
 	}
-
 }
 
 func coveragesRemoveCoverage(t *testing.T) {

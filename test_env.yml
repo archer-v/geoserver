@@ -60,3 +60,7 @@ postgresJNDI:
         value: "FAST"
       - key: "Loose bbox"
         value: "true"
+
+testData:
+   geotiff: "data/sf/sfdem.tif"
+   coverageName: "sfdem"

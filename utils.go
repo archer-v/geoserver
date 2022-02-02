@@ -3,6 +3,7 @@ package geoserver
 import (
 	"bytes"
 	"encoding/json"
+	"encoding/xml"
 	"errors"
 	"fmt"
 	"io"
@@ -93,6 +94,17 @@ func IsEmpty(object interface{}) bool {
 		}
 	}
 	return false
+}
+
+//SerializeToXML convert struct to xml
+func (g *GeoServer) SerializeToXML(structObj interface{}) ([]byte, error) {
+	xmlBuff := []byte("<?xml version=\"1.0\" encoding=\"UTF-8\"?>")
+	serializedStruct, err := xml.Marshal(&structObj)
+	if err != nil {
+		g.logger.Error(err)
+		return nil, err
+	}
+	return append(xmlBuff, serializedStruct...), nil
 }
 
 //SerializeStruct convert struct to json
