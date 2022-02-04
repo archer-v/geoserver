@@ -63,7 +63,14 @@ func (g *GeoServer) DoRequest(request HTTPRequest) (responseText []byte, statusC
 	}
 	defer response.Body.Close()
 	body, _ := ioutil.ReadAll(response.Body)
-	g.logger.Infof("url:%s  Status=%s", req.URL, response.Status)
+	if g.LogRawData || !g.LogSilence {
+		g.logger.Infof("url:%s  Status=%s", req.URL, response.Status)
+	}
+
+	if g.LogRawData {
+		g.logger.Infof("RESP: %s", string(body))
+	}
+
 	return body, response.StatusCode
 }
 
