@@ -105,6 +105,26 @@ func (g *GeoServer) AddLayersAclRule(aclRule AclRule) (done bool, err error) {
 	})
 }
 
+// UpdateLayersAclRule update an existent acl rule
+// err is an error if error occurred else err is nil
+func (g *GeoServer) UpdateLayersAclRule(aclRule AclRule) (done bool, err error) {
+
+	targetURL := g.ParseURL("rest", "security", "acl", "layers")
+
+	ruleString, roleString := aclRule.ToStrings()
+	createAclRequest := map[string]string{
+		ruleString: roleString,
+	}
+
+	return g.updateEntity(targetURL, createAclRequest, func(statusCode int, response []byte) error {
+		if statusCode != statusOk {
+			g.logger.Error(string(response))
+			return g.GetError(statusCode, response)
+		}
+		return nil
+	})
+}
+
 // DeleteLayersAclRule deletes acl rule
 // returns true/false if deleted or not, err is an error if error occurred else err is nil
 func (g *GeoServer) DeleteLayersAclRule(aclRule AclRule) (done bool, err error) {

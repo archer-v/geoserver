@@ -160,7 +160,7 @@ func (g *GeoServer) ParseURL(urlParts ...string) (parsedURL string) {
 
 }
 
-//requestResource does request, gets resource data and fill the response struct with parsed json
+//requestResource performs request, gets resource data and fill the response struct with parsed json
 func (g *GeoServer) requestResource(targetURL string, response interface{}) (err error) {
 	httpRequest := HTTPRequest{
 		Method: getMethod,
@@ -182,9 +182,21 @@ func (g *GeoServer) requestResource(targetURL string, response interface{}) (err
 	return
 }
 
-//createEntity does POST request to create a resource or entity
+//createEntity performs POST request to create a resource or entity
 //checkError is a callback function processing the error, if nil the default error processing will perform
 func (g *GeoServer) createEntity(targetURL string, entity interface{}, checkError func(statusCode int, response []byte) error) (created bool, err error) {
+	return g.writeEntity(targetURL, postMethod, entity, checkError)
+}
+
+//updateEntity performs PUT request update/edit a resource or entity
+//checkError is a callback function processing the error, if nil the default error processing will perform
+func (g *GeoServer) updateEntity(targetURL string, entity interface{}, checkError func(statusCode int, response []byte) error) (created bool, err error) {
+	return g.writeEntity(targetURL, putMethod, entity, checkError)
+}
+
+//writeEntity performs HTTP request to write a resource or entity using POST or PUT method defined by method arg
+//checkError is a callback function processing the error, if nil the default error processing will perform
+func (g *GeoServer) writeEntity(targetURL string, method string, entity interface{}, checkError func(statusCode int, response []byte) error) (done bool, err error) {
 
 	var serializedLayer []byte
 	if entity != nil {
@@ -194,7 +206,7 @@ func (g *GeoServer) createEntity(targetURL string, entity interface{}, checkErro
 	}
 
 	httpRequest := HTTPRequest{
-		Method:   postMethod,
+		Method:   method,
 		Accept:   jsonType,
 		Data:     bytes.NewBuffer(serializedLayer),
 		DataType: jsonType,
@@ -219,7 +231,7 @@ func (g *GeoServer) createEntity(targetURL string, entity interface{}, checkErro
 	return true, nil
 }
 
-//deleteEntity does DELETE request to delete the entity
+//deleteEntity performs DELETE request to delete the entity
 func (g *GeoServer) deleteEntity(targetURL string) (deleted bool, err error) {
 
 	httpRequest := HTTPRequest{
