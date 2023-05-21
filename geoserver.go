@@ -4,12 +4,13 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"os"
 
 	"github.com/sirupsen/logrus"
 	yaml "gopkg.in/yaml.v2"
 )
 
-//GeoServer is the configuration Object
+// GeoServer is the configuration Object
 type GeoServer struct {
 	WorkspaceName string `yaml:"workspace"`
 	ServerURL     string `yaml:"geoserver_url"`
@@ -17,11 +18,13 @@ type GeoServer struct {
 	Password      string `yaml:"password"`
 	HttpClient    *http.Client
 	logger        *logrus.Logger
-	LogSilence    bool
-	LogRawData    bool
 }
 
-//LoadConfig load geoserver config from yaml file
+var LogFile *os.File
+var LogConsoleQuiet = false
+var LogRawData = false
+
+// LoadConfig load geoserver config from yaml file
 func (g *GeoServer) LoadConfig(configFile string) (geoserver *GeoServer, err error) {
 
 	yamlFile, err := ioutil.ReadFile(configFile)

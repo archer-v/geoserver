@@ -15,7 +15,7 @@ import (
 	"reflect"
 )
 
-//HTTPRequest is an http request object
+// HTTPRequest is an http request object
 type HTTPRequest struct {
 	URL      string
 	Accept   string
@@ -25,7 +25,7 @@ type HTTPRequest struct {
 	Method   string
 }
 
-//UtilsInterface contians common function used to help you deal with data and geoserver api
+// UtilsInterface contians common function used to help you deal with data and geoserver api
 type UtilsInterface interface {
 	DoRequest(request HTTPRequest) (responseText []byte, statusCode int)
 	SerializeStruct(structObj interface{}) ([]byte, error)
@@ -33,7 +33,7 @@ type UtilsInterface interface {
 	ParseURL(urlParts ...string) (parsedURL string)
 }
 
-//DoRequest Send request and return result and statusCode
+// DoRequest Send request and return result and statusCode
 func (g *GeoServer) DoRequest(request HTTPRequest) (responseText []byte, statusCode int) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -63,18 +63,24 @@ func (g *GeoServer) DoRequest(request HTTPRequest) (responseText []byte, statusC
 	}
 	defer response.Body.Close()
 	body, _ := ioutil.ReadAll(response.Body)
-	if g.LogRawData || !g.LogSilence {
+	if LogRawData || !LogConsoleQuiet {
 		g.logger.Infof("%s:%s  Status=%s", request.Method, req.URL, response.Status)
+		if LogFile != nil {
+			LogFile.Sync()
+		}
 	}
 
-	if g.LogRawData {
+	if LogRawData {
 		g.logger.Infof("RESP: %s", string(body))
+		if LogFile != nil {
+			LogFile.Sync()
+		}
 	}
 
 	return body, response.StatusCode
 }
 
-//GetError this return the proper error message
+// GetError this return the proper error message
 func (g *GeoServer) GetError(statusCode int, text []byte) (err error) {
 	geoserverErr, ok := statusErrorMapping[statusCode]
 	if !ok {
@@ -103,7 +109,7 @@ func IsEmpty(object interface{}) bool {
 	return false
 }
 
-//SerializeToXML convert struct to xml
+// SerializeToXML convert struct to xml
 func (g *GeoServer) SerializeToXML(structObj interface{}) ([]byte, error) {
 	xmlBuff := []byte("<?xml version=\"1.0\" encoding=\"UTF-8\"?>")
 	serializedStruct, err := xml.Marshal(&structObj)
@@ -114,7 +120,7 @@ func (g *GeoServer) SerializeToXML(structObj interface{}) ([]byte, error) {
 	return append(xmlBuff, serializedStruct...), nil
 }
 
-//SerializeStruct convert struct to json
+// SerializeStruct convert struct to json
 func (g *GeoServer) SerializeStruct(structObj interface{}) ([]byte, error) {
 	serializedStruct, err := json.Marshal(&structObj)
 	if err != nil {
@@ -124,7 +130,7 @@ func (g *GeoServer) SerializeStruct(structObj interface{}) ([]byte, error) {
 	return serializedStruct, nil
 }
 
-//DeSerializeJSON json struct to struct
+// DeSerializeJSON json struct to struct
 func (g *GeoServer) DeSerializeJSON(response []byte, structObj interface{}) (err error) {
 	err = json.Unmarshal(response, &structObj)
 	if err != nil {
@@ -141,7 +147,7 @@ func (g *GeoServer) getGoGeoserverPackageDir() string {
 	return dir
 }
 
-//ParseURL this function join urlParts with geoserver url
+// ParseURL this function join urlParts with geoserver url
 func (g *GeoServer) ParseURL(urlParts ...string) (parsedURL string) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -160,7 +166,7 @@ func (g *GeoServer) ParseURL(urlParts ...string) (parsedURL string) {
 
 }
 
-//requestResource performs request, gets resource data and fill the response struct with parsed json
+// requestResource performs request, gets resource data and fill the response struct with parsed json
 func (g *GeoServer) requestResource(targetURL string, response interface{}) (err error) {
 	httpRequest := HTTPRequest{
 		Method: getMethod,
@@ -182,20 +188,20 @@ func (g *GeoServer) requestResource(targetURL string, response interface{}) (err
 	return
 }
 
-//createEntity performs POST request to create a resource or entity
-//checkError is a callback function processing the error, if nil the default error processing will perform
+// createEntity performs POST request to create a resource or entity
+// checkError is a callback function processing the error, if nil the default error processing will perform
 func (g *GeoServer) createEntity(targetURL string, entity interface{}, checkError func(statusCode int, response []byte) error) (created bool, err error) {
 	return g.writeEntity(targetURL, postMethod, entity, checkError)
 }
 
-//updateEntity performs PUT request update/edit a resource or entity
-//checkError is a callback function processing the error, if nil the default error processing will perform
+// updateEntity performs PUT request update/edit a resource or entity
+// checkError is a callback function processing the error, if nil the default error processing will perform
 func (g *GeoServer) updateEntity(targetURL string, entity interface{}, checkError func(statusCode int, response []byte) error) (created bool, err error) {
 	return g.writeEntity(targetURL, putMethod, entity, checkError)
 }
 
-//writeEntity performs HTTP request to write a resource or entity using POST or PUT method defined by method arg
-//checkError is a callback function processing the error, if nil the default error processing will perform
+// writeEntity performs HTTP request to write a resource or entity using POST or PUT method defined by method arg
+// checkError is a callback function processing the error, if nil the default error processing will perform
 func (g *GeoServer) writeEntity(targetURL string, method string, entity interface{}, checkError func(statusCode int, response []byte) error) (done bool, err error) {
 
 	var serializedLayer []byte
@@ -231,7 +237,7 @@ func (g *GeoServer) writeEntity(targetURL string, method string, entity interfac
 	return true, nil
 }
 
-//deleteEntity performs DELETE request to delete the entity
+// deleteEntity performs DELETE request to delete the entity
 func (g *GeoServer) deleteEntity(targetURL string) (deleted bool, err error) {
 
 	httpRequest := HTTPRequest{
