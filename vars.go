@@ -1,9 +1,5 @@
 package geoserver
 
-import (
-	"errors"
-)
-
 const (
 	statusOk            = 200
 	statusCreated       = 201
@@ -24,11 +20,3 @@ const (
 	postMethod          = "POST"
 	deleteMethod        = "DELETE"
 )
-
-var statusErrorMapping = map[int]error{
-	statusNotAllowed:    errors.New("Method Not Allowed"),
-	statusNotFound:      errors.New("Not Found"),
-	statusUnauthorized:  errors.New("Unauthorized"),
-	statusInternalError: errors.New("Internal Server Error"),
-	statusForbidden:     errors.New("Forbidden"),
-}

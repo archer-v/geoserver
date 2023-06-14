@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"encoding/xml"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -84,11 +83,10 @@ func (g *GeoServer) DoRequest(request HTTPRequest) (responseText []byte, statusC
 func (g *GeoServer) GetError(statusCode int, text []byte) (err error) {
 	geoserverErr, ok := statusErrorMapping[statusCode]
 	if !ok {
-		geoserverErr = fmt.Errorf("Unexpected Error with status code %d", statusCode)
+		geoserverErr = GsError{err: fmt.Sprintf("Unexpected Error with status code %d", statusCode)}
 	}
-	errDetails := string(text)
-	fullMSG := fmt.Sprintf("abstract:%s\ndetails:%s\n", geoserverErr, errDetails)
-	return errors.New(fullMSG)
+	geoserverErr.dump = string(text)
+	return geoserverErr
 }
 
 // IsEmpty helper function to check if obj/struct is nil/empty
