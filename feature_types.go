@@ -1,18 +1,21 @@
 package geoserver
 
 import (
+	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 )
 
-//CRSType geoserver crs response
+// CRSType geoserver crs response
 type CRSType struct {
 	Class string `json:"@class,omitempty"`
 	Value string `json:"$,omitempty"`
 }
 
-//UnmarshalJSON custom deserialization to handle published layers of group
+// UnmarshalJSON custom deserialization to handle published layers of group
 func (u *CRSType) UnmarshalJSON(data []byte) error {
 	var raw interface{}
 	err := json.Unmarshal(data, &raw)
@@ -28,7 +31,7 @@ func (u *CRSType) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-//MarshalJSON custom crs serialization
+// MarshalJSON custom crs serialization
 func (u *CRSType) MarshalJSON() ([]byte, error) {
 	if IsEmpty(u) {
 		x := ""
@@ -67,17 +70,17 @@ type BoundingBox struct {
 	Maxy float64 `json:"maxy,omitempty"`
 }
 
-//Metadata is the geoserver Metadata
+// Metadata is the geoserver Metadata
 type Metadata struct {
 	Entry []*Entry `json:"entry,omitempty"`
 }
 
-//Keywords is the geoserver Keywords
+// Keywords is the geoserver Keywords
 type Keywords struct {
 	String []string `json:"string,omitempty"`
 }
 
-//ResponseSRS is the geoserver ResponseSRS
+// ResponseSRS is the geoserver ResponseSRS
 type ResponseSRS struct {
 	String []int `json:"string,omitempty"`
 }
@@ -101,17 +104,17 @@ type MetadataLink struct {
 	Content      string `json:"content,omitempty"`
 }
 
-//MetadataLinks is the geoserver metadata links
+// MetadataLinks is the geoserver metadata links
 type MetadataLinks struct {
 	MetadataLink []*MetadataLink `json:"metadataLink,omitempty"`
 }
 
-//DataLinks is the geoserver FeatureType Datalinks
+// DataLinks is the geoserver FeatureType Datalinks
 type DataLinks struct {
 	DataLink []*MetadataLink `json:"org.geoserver.catalog.impl.DataLinkInfoImpl,omitempty"`
 }
 
-//Attributes is the geoserver feature type attributes
+// Attributes is the geoserver feature type attributes
 type Attributes struct {
 	Attribute []*Attribute `json:"attribute,omitempty"`
 }
@@ -160,12 +163,12 @@ type FeatureTypes struct {
 	FeatureType []*Resource `json:"featureType,omitempty"`
 }
 
-//FeatureTypesResponseBody is the api body
+// FeatureTypesResponseBody is the api body
 type FeatureTypesResponseBody struct {
 	FeatureTypes *FeatureTypes `json:"featureTypes,omitempty"`
 }
 
-//FeatureTypesRequestBody is the api body
+// FeatureTypesRequestBody is the api body
 type FeatureTypesRequestBody struct {
 	FeatureType *FeatureType `json:"featureTypes,omitempty"`
 }
@@ -264,5 +267,63 @@ func (g *GeoServer) GetFeatureType(workspaceName string, datastoreName string, f
 	}
 	g.DeSerializeJSON(response, &featureTypeResponse)
 	featureType = featureTypeResponse.FeatureType
+	return
+}
+
+// UpdateFeatureType updates geoserver featureType resource, else returns error,
+// featureTypeName is a featureType name or empty (featureType.Name value will be used)
+func (g *GeoServer) UpdateFeatureType(workspaceName string, featureType *FeatureType, featureTypeName string) (modified bool, err error) {
+
+	items := strings.Split(featureType.Store.Name, ":")
+	if len(items) != 2 {
+		return false, errors.New("internal error during featureType update, can't build store name")
+	}
+
+	if featureTypeName == "" {
+		featureTypeName = featureType.Name
+	}
+	targetURL := g.ParseURL("rest", "workspaces", workspaceName, "datastores", items[1], "featuretypes", featureTypeName)
+
+	type FeatureTypeUpdate struct {
+		Name              string             `json:"name,omitempty"`
+		Title             string             `json:"title,omitempty"`
+		Description       string             `json:"description,omitempty"`
+		Abstract          string             `json:"abstract,omitempty"`
+		Keywords          *Keywords          `json:"keywords,omitempty"`
+		Enabled           bool               `json:"enabled,omitempty"`
+		NativeBoundingBox *NativeBoundingBox `json:"nativeBoundingBox,omitempty"`
+		LatLonBoundingBox *LatLonBoundingBox `json:"latLonBoundingBox,omitempty"`
+	}
+
+	type featureTypeUpdateRequestBody struct {
+		FeatureType FeatureTypeUpdate `json:"featureType,omitempty"`
+	}
+
+	data := featureTypeUpdateRequestBody{FeatureType: FeatureTypeUpdate{
+		Name:              featureType.Name,
+		Title:             featureType.Title,
+		Abstract:          featureType.Abstract,
+		Keywords:          featureType.Keywords,
+		Enabled:           featureType.Enabled,
+		NativeBoundingBox: featureType.NativeBoundingBox,
+		LatLonBoundingBox: featureType.LatLonBoundingBox,
+	}}
+
+	serializedLayer, _ := g.SerializeStruct(data)
+	httpRequest := HTTPRequest{
+		Method:   putMethod,
+		Accept:   jsonType,
+		Data:     bytes.NewBuffer(serializedLayer),
+		DataType: jsonType,
+		URL:      targetURL,
+		Query:    nil,
+	}
+	response, responseCode := g.DoRequest(httpRequest)
+	if responseCode != statusOk {
+		g.logger.Error(string(response))
+		err = g.GetError(responseCode, response)
+		return
+	}
+	modified = true
 	return
 }
