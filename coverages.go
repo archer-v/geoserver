@@ -59,7 +59,7 @@ type Transform struct {
 }
 
 type Grid struct {
-	Dimension int        `json:"@dimension,omitempty,string"`
+	Dimension int        `json:"@dimension,omitempty"`
 	Range     *Range     `json:"range,omitempty"`
 	Transform *Transform `json:"transform,omitempty"`
 }
@@ -201,7 +201,7 @@ func (g *GeoServer) DeleteCoverage(workspaceName string, layerName string, recur
 	return g.DeleteLayer(workspaceName, layerName, recurse)
 }
 
-//UpdateCoverage updates geoserver coverage (raster layer), else returns error,
+// UpdateCoverage updates geoserver coverage (raster layer), else returns error,
 func (g *GeoServer) UpdateCoverage(workspaceName string, coverage *Coverage) (modified bool, err error) {
 
 	items := strings.Split(coverage.Store.Name, ":")
@@ -300,7 +300,7 @@ func (g *GeoServer) publishCoverage(workspaceName string, coverageStoreName stri
 	return true, nil
 }
 
-//PublishGeoTiffLayer publishes geotiff to geoserver
+// PublishGeoTiffLayer publishes geotiff to geoserver
 func (g *GeoServer) PublishGeoTiffLayer(workspaceName string, coverageStoreName string, publishName string, fileName string) (published bool, err error) {
 	//it was moved from layers.go because this is the better place for raster layers functions (coverages)
 	//I tried to maintain the original behavior for backward compatibilities,
