@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"reflect"
 	"strconv"
 	"strings"
 )
@@ -56,6 +57,38 @@ type Transform struct {
 	ShearY     float64 `json:"shearY"`
 	TranslateX float64 `json:"translateX"`
 	TranslateY float64 `json:"translateY"`
+}
+
+// different geoserver verions could return float values with/or without quotation marks, so we need this parser
+func (t *Transform) UnmarshalJSON(data []byte) error {
+	var sdata map[string]interface{}
+	err := json.Unmarshal(data, &sdata)
+	if err != nil {
+		return err
+	}
+	*t = Transform{}
+	for n, vi := range sdata {
+		r := reflect.ValueOf(t)
+		var v float64
+		switch vp := vi.(type) {
+		case int:
+			v = float64(vp)
+		case float64:
+			v = vp
+		case string:
+			v, err = strconv.ParseFloat(vp, 32)
+			if err != nil {
+				return err
+			}
+		}
+		f := reflect.Indirect(r).FieldByName(strings.Title(n))
+		if f.IsValid() && f.CanSet() && f.Kind() == reflect.Float64 {
+			f.SetFloat(v)
+		} else {
+			return fmt.Errorf("something get wrong with pasing Transform json struct: unknown json field or wrong Transform struct")
+		}
+	}
+	return nil
 }
 
 type Grid struct {
