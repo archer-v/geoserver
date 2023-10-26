@@ -33,8 +33,8 @@ type GwcTask struct {
 	TilesRemaining int
 }
 
-//GwcSeed performs GeoWebCache request for seed, reseed or truncate the Layer tiles cache
-//returns nil on success or error
+// GwcSeedRequest performs GeoWebCache request for seed, reseed or truncate the Layer tiles cache
+// returns nil on success or error
 func (g *GeoServer) GwcSeedRequest(workspaceName string, layerName string, seedRequest GwcSeedRequest) (err error) {
 
 	if seedRequest.Type != "seed" && seedRequest.Type != "truncate" && seedRequest.Type != "reseed" {
@@ -77,8 +77,8 @@ func (g *GeoServer) GwcSeedRequest(workspaceName string, layerName string, seedR
 	return
 }
 
-//GwcTasks returns list of GeoWebCache seeding tasks
-//returns
+// GwcTasks returns list of GeoWebCache seeding tasks
+// returns
 func (g *GeoServer) GwcTasks(workspaceName string, layerName string) (tasks []GwcTask, err error) {
 	targetURL := g.ParseURL("gwc", "rest", "seed", workspaceName+":"+layerName+".json")
 
@@ -105,7 +105,7 @@ func (g GeoServer) parseRespData(data []byte) (tasks []GwcTask, err error) {
 	}
 
 	if err = g.DeSerializeJSON(data, &respData); err != nil {
-		return nil, fmt.Errorf("can't parse the coverage data, %v", err)
+		return nil, fmt.Errorf("can't parse the gwc response, %v", err)
 	}
 
 	for _, v := range respData.Arr {

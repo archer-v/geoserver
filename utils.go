@@ -6,7 +6,6 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"path"
@@ -61,7 +60,7 @@ func (g *GeoServer) DoRequest(request HTTPRequest) (responseText []byte, statusC
 		panic(responseErr)
 	}
 	defer response.Body.Close()
-	body, _ := ioutil.ReadAll(response.Body)
+	body, _ := io.ReadAll(response.Body)
 	if LogRawData || !LogConsoleQuiet {
 		g.logger.Infof("%s:%s  Status=%s", request.Method, req.URL, response.Status)
 		if LogFile != nil {

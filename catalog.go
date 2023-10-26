@@ -4,9 +4,10 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"time"
 )
 
-// Catalog is geoserver interface that define all operatoins
+// Catalog is geoserver interface that define all operations
 type Catalog interface {
 	WorkspaceService
 	DatastoreService
@@ -26,11 +27,16 @@ type Catalog interface {
 // return geoserver structObj
 func GetCatalog(geoserverURL string, username string, password string) (catalog *GeoServer) {
 	geoserver := GeoServer{
-		ServerURL:  geoserverURL,
-		Username:   username,
-		Password:   password,
-		HttpClient: &http.Client{},
-		logger:     GetLogger(),
+		ServerURL: geoserverURL,
+		Username:  username,
+		Password:  password,
+		HttpClient: &http.Client{
+			Transport: &http.Transport{
+				DisableCompression:    true, // gzip compression is disabled, cause GWC has an issue with erroneous responses
+				ResponseHeaderTimeout: time.Second * 5,
+			},
+		},
+		logger: GetLogger(),
 	}
 
 	if LogFile != nil {
