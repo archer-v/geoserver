@@ -301,6 +301,7 @@ func (g *GeoServer) UpdateFeatureType(workspaceName string, featureType *Feature
 		Abstract          string             `json:"abstract,omitempty"`
 		Keywords          *Keywords          `json:"keywords,omitempty"`
 		Enabled           bool               `json:"enabled,omitempty"`
+		Srs               string             `json:"srs,omitempty"`
 		NativeBoundingBox *NativeBoundingBox `json:"nativeBoundingBox,omitempty"`
 		LatLonBoundingBox *LatLonBoundingBox `json:"latLonBoundingBox,omitempty"`
 	}
@@ -317,6 +318,7 @@ func (g *GeoServer) UpdateFeatureType(workspaceName string, featureType *Feature
 		Enabled:           featureType.Enabled,
 		NativeBoundingBox: featureType.NativeBoundingBox,
 		LatLonBoundingBox: featureType.LatLonBoundingBox,
+		Srs:               featureType.Srs,
 	}}
 
 	serializedLayer, _ := g.SerializeStruct(data)
