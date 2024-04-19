@@ -272,7 +272,10 @@ func (g *GeoServer) GetFeatureType(workspaceName string, datastoreName string, f
 
 // UpdateFeatureType updates geoserver featureType resource, else returns error,
 // featureTypeName is a featureType name or empty (featureType.Name value will be used)
-func (g *GeoServer) UpdateFeatureType(workspaceName string, featureType *FeatureType, featureTypeName string) (modified bool, err error) {
+// recalculate can be nil, or an array of recalculate options: "nativebbox", "latlonbbox"
+// an empty recalculate array cause to avoid all recalculation on large dataset
+// see https://docs.geoserver.org/latest/en/api/#1.0.0/featuretypes.yaml
+func (g *GeoServer) UpdateFeatureType(workspaceName string, featureType *FeatureType, featureTypeName string, recalculate []string) (modified bool, err error) {
 
 	items := strings.Split(featureType.Store.Name, ":")
 	if len(items) != 2 {
@@ -283,6 +286,13 @@ func (g *GeoServer) UpdateFeatureType(workspaceName string, featureType *Feature
 		featureTypeName = featureType.Name
 	}
 	targetURL := g.ParseURL("rest", "workspaces", workspaceName, "datastores", items[1], "featuretypes", featureTypeName)
+
+	var query map[string]string
+
+	if recalculate != nil {
+		query = make(map[string]string)
+		query["recalculate"] = strings.Join(recalculate, ",")
+	}
 
 	type FeatureTypeUpdate struct {
 		Name              string             `json:"name,omitempty"`
@@ -316,7 +326,7 @@ func (g *GeoServer) UpdateFeatureType(workspaceName string, featureType *Feature
 		Data:     bytes.NewBuffer(serializedLayer),
 		DataType: jsonType,
 		URL:      targetURL,
-		Query:    nil,
+		Query:    query,
 	}
 	response, responseCode := g.DoRequest(httpRequest)
 	if responseCode != statusOk {
