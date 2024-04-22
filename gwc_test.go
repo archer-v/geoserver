@@ -45,7 +45,7 @@ func gwcTestPostcondition() {
 
 func TestParseRespData(t *testing.T) {
 	testData := []byte("{\"long-array-array\":[[3296,6624,124,57,2],[3296,6624,1,58,2],[-1,-1,-2,59,2],[3264,6624,180,60,2],[3328,6624,-1,61,2],[-1,-1,-2,62,2]]}")
-	tasks, err := GeoServer{}.parseRespData(testData)
+	tasks, err := GeoServer{}.parseTasksRespData(testData)
 	if err != nil {
 		t.Fatalf("parseError: %v", err.Error())
 	}
@@ -80,6 +80,27 @@ func TestGwcTasks(t *testing.T) {
 	tasks, err := gsCatalog.GwcTasks(testConfig.Geoserver.Workspace, testConfig.TestData.CoverageName)
 	assert.Nil(t, err)
 	assert.True(t, len(tasks) == 0)
+}
+
+func TestGwcLayer(t *testing.T) {
+
+	test_before(t)
+
+	//precondition
+	gwcTestPrecondition(t)
+	defer func() {
+		gwcTestPostcondition()
+	}()
+
+	layer, err := gsCatalog.GetGwcLayer(testConfig.Geoserver.Workspace, testConfig.TestData.CoverageName)
+	assert.Nil(t, err)
+	assert.True(t, layer.Enabled)
+
+	layer.Enabled = false
+
+	err = gsCatalog.UpdateGwcLayer(layer)
+	assert.Nil(t, err)
+	assert.False(t, layer.Enabled)
 }
 
 func TestGwcSeed(t *testing.T) {

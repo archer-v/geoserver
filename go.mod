@@ -3,6 +3,7 @@ module github.com/archer-v/geoserver
 go 1.15
 
 require (
+	github.com/hishamkaram/geoserver v1.0.1 // indirect
 	github.com/konsorten/go-windows-terminal-sequences v1.0.1 // indirect
 	github.com/sirupsen/logrus v1.1.1
 	github.com/stretchr/testify v1.2.2

@@ -16,6 +16,38 @@ type GwcSeedRequest struct {
 	ThreadCount int    `xml:"threadCount"`
 }
 
+type GwcLayer struct {
+	XMLName           xml.Name                 `xml:"GeoServerLayer"`
+	ID                string                   `xml:"id"`
+	Enabled           bool                     `xml:"enabled"`
+	InMemoryCached    bool                     `xml:"inMemoryCached"`
+	Name              string                   `xml:"name"`
+	MimeFormats       []string                 `xml:"mimeFormats>string"`
+	GridSubsets       []GwcLayerGridSubset     `xml:"gridSubsets>gridSubset"`
+	MetaWidthHeight   []int                    `xml:"metaWidthHeight>int"`
+	ExpireCache       int                      `xml:"expireCache"`
+	ExpireClients     int                      `xml:"expireClients"`
+	ParameterFilters  GwcLayerParameterFilters `xml:"parameterFilters"`
+	Gutter            int                      `xml:"gutter"`
+	CacheWarningSkips []string                 `xml:"cacheWarningSkips"`
+}
+
+type GwcLayerGridSubset struct {
+	GridSetName string                    `xml:"gridSetName"`
+	Extent      *GwcLayerGridSubsetExtent `xml:"extent,omitempty"`
+}
+
+type GwcLayerGridSubsetExtent struct {
+	Coords []float64 `xml:"coords>double"`
+}
+
+type GwcLayerParameterFilters struct {
+	StyleParameterFilter struct {
+		Key          string `xml:"key"`
+		DefaultValue string `xml:"defaultValue"`
+	} `xml:"styleParameterFilter"`
+}
+
 type GwcTaskStatus int
 
 const (
@@ -96,10 +128,59 @@ func (g *GeoServer) GwcTasks(workspaceName string, layerName string) (tasks []Gw
 		return
 	}
 
-	return g.parseRespData(response)
+	return g.parseTasksRespData(response)
 }
 
-func (g GeoServer) parseRespData(data []byte) (tasks []GwcTask, err error) {
+// GetGwcLayer returns GeoWebCache layer caching configuration data
+func (g GeoServer) GetGwcLayer(workspaceName string, layerName string) (layer GwcLayer, err error) {
+
+	targetURL := g.ParseURL("gwc", "rest", "layers", workspaceName+":"+layerName)
+
+	httpRequest := HTTPRequest{
+		Method: getMethod,
+		Accept: xmlType, // use xml instead json, cause json structs differ for GET and PUT request
+		URL:    targetURL,
+		Query:  nil,
+	}
+
+	response, responseCode := g.DoRequest(httpRequest)
+	if responseCode != statusOk {
+		g.logger.Error(string(response))
+		err = g.GetError(responseCode, response)
+		return
+	}
+
+	err = xml.Unmarshal(response, &layer)
+	if err != nil {
+		err = fmt.Errorf("wrong answer, error unmarshalling XML: %v\n", err)
+		return
+	}
+	return
+}
+
+// UpdateGwcLayer create or update the layer caching configuration for GeoWebcache
+func (g GeoServer) UpdateGwcLayer(layer GwcLayer) (err error) {
+
+	targetURL := g.ParseURL("gwc", "rest", "layers", layer.Name)
+
+	serializedData, _ := g.SerializeToXML(layer)
+	httpRequest := HTTPRequest{
+		Method:   putMethod,
+		Data:     bytes.NewBuffer(serializedData),
+		DataType: xmlType,
+		URL:      targetURL,
+		Query:    nil,
+	}
+	response, responseCode := g.DoRequest(httpRequest)
+	if responseCode != statusOk {
+		g.logger.Error(string(response))
+		err = g.GetError(responseCode, response)
+		return
+	}
+	return
+}
+
+func (g GeoServer) parseTasksRespData(data []byte) (tasks []GwcTask, err error) {
 	var respData struct {
 		Arr [][]int `json:"long-array-array"`
 	}
