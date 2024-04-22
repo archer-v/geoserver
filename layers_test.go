@@ -1,6 +1,7 @@
 package geoserver
 
 import (
+	"encoding/json"
 	"path/filepath"
 	"reflect"
 	"testing"
@@ -64,10 +65,16 @@ func TestPublishPostgisLayer(t *testing.T) {
 	created, err := gsCatalog.CreateDatastore(conn, "topp")
 	assert.True(t, created)
 	assert.Nil(t, err)
-	published, dbErr := gsCatalog.PublishPostgisLayer("topp", "postgis_datastore", "lbldyt", "lbldyt")
+
+	// sample featureType
+	featureType := FeatureType{}
+	err = json.Unmarshal(featureTypeCreatingSample(), &featureType)
+	assert.Nil(t, err)
+
+	published, dbErr := gsCatalog.PublishPostgisLayer("topp", "postgis_datastore", "lbldyt", "lbldyt", featureType)
 	assert.True(t, published)
 	assert.Nil(t, dbErr)
-	published, dbErr = gsCatalog.PublishPostgisLayer("topp", "dummy_store_test", "lbldyt", "lbldyt")
+	published, dbErr = gsCatalog.PublishPostgisLayer("topp", "dummy_store_test", "lbldyt", "lbldyt", featureType)
 	assert.False(t, published)
 	assert.NotNil(t, dbErr)
 
